@@ -56,7 +56,7 @@ class findOrphans():
                     WHERE URCALL = '{}';""".format(call)) )
             #print('{} totalqs = {}'.format(call, totalqs))
             for wk in self.orphans[call].workedBy:
-                workedby += wk + ','
+                workedby += wk + ' '
 
             orphanid = db.write_pquery(\
                """INSERT INTO ORPHANS 
@@ -82,8 +82,6 @@ class orphanCall():
             self.fillworkedBy(db)
             
     def fillworkedBy(self, db):
-        #db = MOQPDBUtils(HOSTNAME, USER, PW, DBNAME)
-        #db.setCursorDict()
 
         qsos = db.read_query("""SELECT UNIQUE URCALL,MYCALL FROM QSOS 
                          WHERE URCALL LIKE '{}' ORDER BY MYCALL""".format(self.callsign))
