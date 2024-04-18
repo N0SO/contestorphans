@@ -13,6 +13,8 @@ from moqputils.configs.moqpdbconfig import *
 from datetime import datetime
 from htmlutils.htmldoc import *
 from cabrilloutils.CabrilloUtils import CabrilloUtils
+from qrzutils.qrz.qrzlookup import QRZLookup
+
 
 class findOrphans(): 
     def __init__(self):
@@ -75,14 +77,54 @@ class findOrphans():
 
 class orphanCall():
     
-    def __init__(self, callsign = None, db = None):
+    def __init__(self, callsign = None, 
+                       workedby = [],
+                       opname = None,
+                       opemail = None,
+                       db = None):
         self.callsign = callsign
-        self.workedBy = []
+        self.workedBy = workedby
+        self.opname = opname
+        self.opemail = opemail
         if callsign:
+            self.getOpData(callsign)
+        if db:
             self.fillworkedBy(db)
             
-    def fillworkedBy(self, db):
+    def getOpData(self, callsign):
+        self.qrz=QRZLookup('/home/pi/Projects/moqputils/moqputils/configs/qrzsettings.cfg')
+        try:
+            opdata = self.qrz.callsign(callsign.strip())
+            qrzdata=True
+            if ('fname' in opdata) and ('name' in opdata):
+                self.opname = ('{} {}, {}'.format(\
+                                                 opdata['fname'].upper(),
+                                                 opdata['name'].upper(),
+                                                 op.upper()))
+            elif ('attn' in opdata) and ('name' in opdata):
+                self.opname = ('{} ATTN {}'.format(\
+                                                 opdata['name'].upper(),
+                                                 opdata['att1'].upper()))
+            elif ('name' in opdata):
+                self.opname = ('{}'.format(\
+                                                 opdata['name'].upper()))
+            else:
+                self.opname=('***NO NAME FOR {} ***'.format(\
+                                                 op.upper()))
+            if ('email' in opdata):
+                self.opemail = opdata['email'].upper()                       
+            else:                        
+                self.opemail = ''                       
+           
+            #print(opdata)
+        except:
+            qrzdata=False
+            print('NO QRZ for {}'.format(callsign))
+        print('{}, {}, {}'.format(self.callsign,
+                                  self.opname,
+                                  self.opemail))
 
+    def fillworkedBy(self, db):
         qsos = db.read_query("""SELECT UNIQUE URCALL,MYCALL FROM QSOS 
                          WHERE URCALL LIKE '{}' ORDER BY MYCALL""".format(self.callsign))
         for q in qsos:
