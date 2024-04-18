@@ -96,11 +96,13 @@ class orphanCall():
         try:
             opdata = self.qrz.callsign(callsign.strip())
             qrzdata=True
-            if ('fname' in opdata) and ('name' in opdata):
-                self.opname = ('{} {}, {}'.format(\
+            #print(opdata
+            if 'name_fmt' in opdata:
+                self.opname = opdata['name_fmt'].upper()
+            elif ('fname' in opdata) and ('name' in opdata):
+                self.opname = ('{} {}'.format(\
                                                  opdata['fname'].upper(),
-                                                 opdata['name'].upper(),
-                                                 op.upper()))
+                                                 opdata['name'].upper()))
             elif ('attn' in opdata) and ('name' in opdata):
                 self.opname = ('{} ATTN {}'.format(\
                                                  opdata['name'].upper(),
@@ -116,13 +118,13 @@ class orphanCall():
             else:                        
                 self.opemail = ''                       
            
-            #print(opdata)
         except:
             qrzdata=False
             print('NO QRZ for {}'.format(callsign))
-        print('{}, {}, {}'.format(self.callsign,
+        print('{}, {}, {}, {}'.format(self.callsign,
                                   self.opname,
-                                  self.opemail))
+                                  self.opemail,
+                                  opdata['name_fmt']))
 
     def fillworkedBy(self, db):
         qsos = db.read_query("""SELECT UNIQUE URCALL,MYCALL FROM QSOS 

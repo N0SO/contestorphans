@@ -60,6 +60,9 @@ def parseMyArgs():
                     html for web page use.
                     default value is csv""")
 
+    parser.add_argument('-u', '--unitTest',
+                                   default = None,
+            help="""Unit test class orphanCalls""")
 
 
     args = parser.parse_args()
@@ -68,6 +71,10 @@ def parseMyArgs():
     
 if __name__ == '__main__':
     args = parseMyArgs()
+    if args.unitTest:
+        from contestorphans.contestOrphans import orphanCall
+        c = orphanCall(callsign = args.unitTest)
+        
     if args.createTable:
         from contestorphans.contestOrphans import findOrphans
         app=findOrphans()
