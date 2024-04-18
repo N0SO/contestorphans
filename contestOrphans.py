@@ -5,7 +5,7 @@ for this contest.
 
 Update History is in file __init__.py
 """
-
+DEBUG = True
 
 from contestorphans.__init__ import VERSION
 from moqputils.moqpdbutils import *
@@ -17,11 +17,11 @@ from qrzutils.qrz.qrzlookup import QRZLookup
 
 
 class findOrphans(): 
-    def __init__(self):
+    def __init__(self, lookupcalls=True):
         self.orphans = dict()
-        self.getOrphans()
+        self.getOrphans(lookupcalls=True)
  
-    def getOrphans(self):
+    def getOrphans(self, lookupcalls=True):
         db = MOQPDBUtils(HOSTNAME, USER, PW, DBNAME)
         db.setCursorDict()
         cu = CabrilloUtils()
@@ -32,25 +32,29 @@ class findOrphans():
                      FROM QSOS WHERE 1 order by URCALL""") 
         for st in stationsWorked:
             orphancall = cu.stripCallsign(st['URCALL'])
-            if db.CallinLogDB(orphancall) == None:
-                oc=orphanCall(orphancall, db)
-                #workedby = oc.fillworkedBy()
-                #(oc.callsign, oc.workedBy)
-                self.orphans[orphancall]=oc
+            if (db.CallinLogDB(orphancall) == None) and \
+                   (orphancall not in self.orphans.keys()):
+                oc= orphanCall(callsign = orphancall, 
+                               db=db,
+                               lookupcall=lookupcalls)
+                if(len(oc.workedBy)) > 0:
+                    self.orphans[orphancall]=oc
         self._saveToTable(db)
         return self.orphans   
         
     def _saveToTable(self, db):
-        dquery ='DROP TABLE IF EXISTS ORPHANS, WORKEDBYORPHANS;'
+        dquery ='DROP TABLE IF EXISTS ORPHANS'
         dquery1 = """CREATE TABLE `ORPHANS` ( 
         `ID` INT NOT NULL AUTO_INCREMENT , 
         `ORPHANCALL` VARCHAR(16) NULL DEFAULT NULL ,
         `UNIQUESTATIONS` INT NULL,
         `TOTALQSOS` INT NULL, 
+        `OPNAME` VARCHAR(40) NULL DEFAULT NULL,
+        `OPEMAIL` VARCHAR(40) NULL DEFAULT NULL,
         `WORKEDBY` VARCHAR(4096) NULL DEFAULT NULL , 
         PRIMARY KEY (`ID`)) ENGINE = InnoDB;"""
         db.write_query(dquery) # Delete old digital tables  
-        db.write_query(dquery1) # Delete old digital tables  
+        db.write_query(dquery1) # create new empty table 
         calllist= list(self.orphans.keys())
         for call in calllist:
             workedby=''
@@ -59,14 +63,18 @@ class findOrphans():
             #print('{} totalqs = {}'.format(call, totalqs))
             for wk in self.orphans[call].workedBy:
                 workedby += wk + ' '
-
+            print('Saving log orphan {} to database...'.format(\
+                                           self.orphans[call].callsign))
             orphanid = db.write_pquery(\
                """INSERT INTO ORPHANS 
-                  (ORPHANCALL, UNIQUESTATIONS, TOTALQSOS, WORKEDBY)
-                  VALUES (%s, %s, %s, %s)""",
+                  (ORPHANCALL, UNIQUESTATIONS, TOTALQSOS, OPNAME,
+                     OPEMAIL, WORKEDBY)
+                  VALUES (%s, %s, %s, %s, %s, %s)""",
                [ self.orphans[call].callsign,
                 len(self.orphans[call].workedBy), 
                 totalqs,
+                self.orphans[call].opname,
+                self.orphans[call].opemail,
                 workedby ] )
             """
             print('Writing {}\n{}\n{}'.format(orphanid,
@@ -81,18 +89,22 @@ class orphanCall():
                        workedby = [],
                        opname = None,
                        opemail = None,
-                       db = None):
+                       db = None,
+                       lookupcall = True):
         self.callsign = callsign
         self.workedBy = workedby
         self.opname = opname
         self.opemail = opemail
-        if callsign:
+        if callsign and lookupcall:
             self.getOpData(callsign)
         if db:
             self.fillworkedBy(db)
             
     def getOpData(self, callsign):
         self.qrz=QRZLookup('/home/pi/Projects/moqputils/moqputils/configs/qrzsettings.cfg')
+        if DEBUG: 
+            print('Looking up orphan {} ...'.format(callsign))
+
         try:
             opdata = self.qrz.callsign(callsign.strip())
             qrzdata=True
@@ -121,18 +133,44 @@ class orphanCall():
         except:
             qrzdata=False
             print('NO QRZ for {}'.format(callsign))
-        print('{}, {}, {}, {}'.format(self.callsign,
-                                  self.opname,
-                                  self.opemail,
-                                  opdata['name_fmt']))
 
     def fillworkedBy(self, db):
+        if DEBUG:
+                print('Filling in stations workedBy for log orphan {}...'.format(self.callsign))
+        #print(self.workedBy)
         qsos = db.read_query("""SELECT UNIQUE URCALL,MYCALL FROM QSOS 
                          WHERE URCALL LIKE '{}' ORDER BY MYCALL""".format(self.callsign))
+        #print(len(qsos))
+        self.workedBy = []
         for q in qsos:
+            #print(q['MYCALL'])
             self.workedBy.append(q['MYCALL'])
             
+        #print(self.workedBy)
         return self.workedBy
+        
+    def getVals(self):
+        return (self.callsign, self.opname, self.opemail, self.workedBy)
+        
+    def getCSV(self):
+        return ('{}\t{}\t{}\t{}'.format(self.callsign,
+                                       self.opname,
+                                       self.opemail,
+                                       self.workedBy))
+                                       
+    def getHTML(self):
+      return('<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.\
+              format(self.callsign,
+                     self.opname,
+                     self.opemail,
+                     self.workedBy))
+
+   
+    def getDict(self):
+        return {'callsign':self.callsign,
+                    'opname':self.opname,
+                    'opemail':self.opemail,
+                    'workedBy':self.workedBy}
         
 class orphanReport():
     def __init__(self, reportdata =  None):

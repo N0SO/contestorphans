@@ -51,6 +51,14 @@ def parseMyArgs():
                     will be replace, so if a backup is required,
                     run it first.""")
 
+    parser.add_argument('-d', '--dontLookupCalls',
+                                   action='store_false', 
+                                   default=True,
+            help="""Do not attempt to look up orphan callsigns on 
+                    QRZ.COM. Note that call lookup adds significant 
+                    time to the 
+                    --createTable run time. """)
+
     parser.add_argument('-t', '--reportType',
                                    default = 'csv',
             help="""Set report type for output. Only valid if more than
@@ -73,11 +81,16 @@ if __name__ == '__main__':
     args = parseMyArgs()
     if args.unitTest:
         from contestorphans.contestOrphans import orphanCall
-        c = orphanCall(callsign = args.unitTest)
+        c = orphanCall(callsign = args.unitTest, 
+                                  lookupcall=args.dontLookupCalls)
+        print(c.getCSV())
+        #print(c.getDict())
+        #print(c.getHTML())
+        exit()
         
     if args.createTable:
         from contestorphans.contestOrphans import findOrphans
-        app=findOrphans()
+        app=findOrphans(lookupcalls=args.dontLookupCalls)
     if args.reportType:
         reptype = args.reportType.lower()
         if reptype == 'csv':
