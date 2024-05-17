@@ -49,7 +49,7 @@ class findOrphans():
         `ORPHANCALL` VARCHAR(16) NULL DEFAULT NULL ,
         `UNIQUESTATIONS` INT NULL,
         `TOTALQSOS` INT NULL, 
-        `OPNAME` VARCHAR(40) NULL DEFAULT NULL,
+        `OPNAME` VARCHAR(60) NULL DEFAULT NULL,
         `OPEMAIL` VARCHAR(40) NULL DEFAULT NULL,
         `WORKEDBY` VARCHAR(4096) NULL DEFAULT NULL , 
         PRIMARY KEY (`ID`)) ENGINE = InnoDB;"""
@@ -173,8 +173,10 @@ class orphanCall():
                     'workedBy':self.workedBy}
         
 class orphanReport():
-    def __init__(self, reportdata =  None):
-        self. reportData = reportdata
+    def __init__(self, reportdata =  None,
+                       updatetime = None):
+        self.reportData = reportdata
+        self.Update_time = updatetime
         if reportdata == None:
             self.fetchReport()
         self.appMain()
@@ -187,6 +189,9 @@ class orphanReport():
             print("No data - run mqporphans --create first.")
             exit(0)
         self.reportData = self.makeReport(tableData)
+        tstatus = db.read_query("""SHOW TABLE STATUS 
+                  FROM {} LIKE 'LOGHEADER';""".format(DBNAME))
+        self.Update_time = tstatus[0]['Update_time']          
         return tableData
 
     def makeReport(self, td):
@@ -230,7 +235,10 @@ class htmlOrphan(orphanReport):
            """<p align='center'>The ORPHANCALL stations appear in other
               people's logs, but they HAVE NOT yet submitted a log.</p> """)
         
-        d.addTable(htmld, header=True)
+        d.addTable(htmld, header=True, caption =\
+            """Last Orphan call Update:  {}</p> """.\
+            format(self.Update_time))
+
         d.closeBody()
         d.closeDoc()
 
