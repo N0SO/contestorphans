@@ -17,11 +17,11 @@ from qrzutils.qrz.qrzlookup import QRZLookup
 
 
 class findOrphans(): 
-    def __init__(self, lookupcalls=True):
+    def __init__(self, lookupcalls=False):
         self.orphans = dict()
-        self.getOrphans(lookupcalls=True)
+        self.getOrphans(lookupcalls)
  
-    def getOrphans(self, lookupcalls=True):
+    def getOrphans(self, lookupcalls):
         db = MOQPDBUtils(HOSTNAME, USER, PW, DBNAME)
         db.setCursorDict()
         cu = CabrilloUtils()
@@ -29,18 +29,18 @@ class findOrphans():
         Get one unique urcall (stations worked) for every QSO in the DB
         """
         stationsWorked = db.read_query("""SELECT UNIQUE URCALL
-                     FROM QSOS WHERE 1 order by URCALL""") 
+                     FROM QSOS WHERE VALID=1 order by URCALL""")
         for st in stationsWorked:
             orphancall = cu.stripCallsign(st['URCALL'])
             if (db.CallinLogDB(orphancall) == None) and \
                    (orphancall not in self.orphans.keys()):
-                oc= orphanCall(callsign = orphancall, 
+                oc= orphanCall(callsign = orphancall,
                                db=db,
                                lookupcall=lookupcalls)
                 if(len(oc.workedBy)) > 0:
                     self.orphans[orphancall]=oc
         self._saveToTable(db)
-        return self.orphans   
+        return self.orphans
         
     def _saveToTable(self, db):
         dquery ='DROP TABLE IF EXISTS ORPHANS'
@@ -95,10 +95,11 @@ class orphanCall():
         self.workedBy = workedby
         self.opname = opname
         self.opemail = opemail
-        if callsign and lookupcall:
-            self.getOpData(callsign)
-        if db:
+        if callsign and db:
             self.fillworkedBy(db)
+        if callsign and lookupcall:
+            if len(self.workedBy) >= lookupcall:
+                self.getOpData(callsign)
             
     def getOpData(self, callsign):
         self.qrz=QRZLookup('/home/pi/Projects/moqputils/moqputils/configs/qrzsettings.cfg')
@@ -139,7 +140,7 @@ class orphanCall():
                 print('Filling in stations workedBy for log orphan {}...'.format(self.callsign))
         #print(self.workedBy)
         qsos = db.read_query("""SELECT UNIQUE URCALL,MYCALL FROM QSOS 
-                         WHERE URCALL LIKE '{}' ORDER BY MYCALL""".format(self.callsign))
+                         WHERE ( (URCALL LIKE '{}') AND (VALID=1) )  ORDER BY MYCALL""".format(self.callsign))
         #print(len(qsos))
         self.workedBy = []
         for q in qsos:

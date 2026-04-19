@@ -51,13 +51,15 @@ def parseMyArgs():
                     will be replace, so if a backup is required,
                     run it first.""")
 
-    parser.add_argument('-d', '--dontLookupCalls',
-                                   action='store_false', 
-                                   default=True,
-            help="""Do not attempt to look up orphan callsigns on 
-                    QRZ.COM. Note that call lookup adds significant 
-                    time to the 
-                    --createTable run time. """)
+    parser.add_argument('-n', '--lookupopdata',
+                                   default=50,
+            help="""Look up orphan callsigns if they appear in the 
+                    the orphan's 'workedBy' list more than the number
+                    of times passed in here. The data looked up will 
+                    be  included  in the database row for the orphan
+                    call. The default threshold is 50 or more 'workedBy'
+                    callsigns. Note that call lookup adds significant 
+                    time to the  --createTable run time. """)
 
     parser.add_argument('-t', '--reportType',
                                    default = 'csv',
@@ -74,23 +76,28 @@ def parseMyArgs():
 
 
     args = parser.parse_args()
+
     return args
     
     
 if __name__ == '__main__':
     args = parseMyArgs()
+    try:
+        args.lookupopdata = int(args.lookupopdata)
+    except:
+        print(f'--lookupopdata={args.lookupopdata} - it must be an integer.')
+        exit()
+
     if args.unitTest:
         from contestorphans.contestOrphans import orphanCall
         c = orphanCall(callsign = args.unitTest, 
-                                  lookupcall=args.dontLookupCalls)
+                                  lookupcall=args.lookupopdata)
         print(c.getCSV())
-        #print(c.getDict())
-        #print(c.getHTML())
         exit()
         
     if args.createTable:
         from contestorphans.contestOrphans import findOrphans
-        app=findOrphans(lookupcalls=args.dontLookupCalls)
+        app=findOrphans(lookupcalls=args.lookupopdata)
     if args.reportType:
         reptype = args.reportType.lower()
         if reptype == 'csv':

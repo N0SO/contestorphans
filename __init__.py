@@ -13,6 +13,9 @@ Update History:
 -          QRZ lookup. The database fields get filled in to the lookup
 -          can happen later. Need to update code to add the QRZ data
 -          in place without re-creating the entire table.
+* Thu Apr 19 2026 Mike Heitmann, N0SO <n0so@arrl.net>
+- V1.0.0 - Implement enhncements detailed in Issue #2
 """
-VERSION = '0.1.0' 
+VERSION = '1.0.0'
+
 
