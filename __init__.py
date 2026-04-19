@@ -14,8 +14,16 @@ Update History:
 -          can happen later. Need to update code to add the QRZ data
 -          in place without re-creating the entire table.
 * Thu Apr 19 2026 Mike Heitmann, N0SO <n0so@arrl.net>
-- V1.0.0 - Implement enhncements detailed in Issue #2
+- V1.0.0 - Implement enhancements detailed in Issue #2
+-          Fixed issue #1
+- V1.0.1 - Implemented all but using the FCC database. We will keep 
+-          Issue #2 open until after log scoring is done and there is
+-          no danger of inadvertenly corrupting the database.
+-          Changed the -d option to -n.
+-          Added -o option.
+-          Adds orphan call operator name and e-mail to the reports. 
+-          Defaults to OFF (omit op data from the report).
 """
-VERSION = '1.0.0'
+VERSION = '1.0.1'
 
 

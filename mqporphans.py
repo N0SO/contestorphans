@@ -53,7 +53,8 @@ def parseMyArgs():
 
     parser.add_argument('-n', '--lookupopdata',
                                    default=50,
-            help="""Look up orphan callsigns if they appear in the 
+            help="""Used with --createTable option. 
+                    Look up orphan callsigns if they appear in the 
                     the orphan's 'workedBy' list more than the number
                     of times passed in here. The data looked up will 
                     be  included  in the database row for the orphan
@@ -61,7 +62,16 @@ def parseMyArgs():
                     callsigns. Note that call lookup adds significant 
                     time to the  --createTable run time. """)
 
+    parser.add_argument('-o', '--opData',
+                                   action='store_true', 
+                                   default=False,
+            help="""Show data about the orphan call operator.
+                    Adds operator name and callsign to the report if
+                    it was looked up during the --createTable process.
+                    """)
+
     parser.add_argument('-t', '--reportType',
+                                   choices =['csv', 'html'],
                                    default = 'csv',
             help="""Set report type for output. Only valid if more than
                     one report output type is avaible. Options are: 
@@ -102,9 +112,9 @@ if __name__ == '__main__':
         reptype = args.reportType.lower()
         if reptype == 'csv':
             from contestorphans.contestOrphans import orphanReport
-            app = orphanReport()
+            app = orphanReport(opdata = args.opData)
         elif reptype == 'html':
             from contestorphans.contestOrphans import htmlOrphan
-            app = htmlOrphan()
+            app = htmlOrphan(opdata = args.opData)
     else:
         print('No action specified: {}'.format(args))

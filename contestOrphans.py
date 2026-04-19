@@ -175,9 +175,11 @@ class orphanCall():
         
 class orphanReport():
     def __init__(self, reportdata =  None,
-                       updatetime = None):
+                       updatetime = None,
+                       opdata = False):
         self.reportData = reportdata
         self.Update_time = updatetime
+        self.opData = opdata # include op name and email
         if reportdata == None:
             self.fetchReport()
         self.appMain()
@@ -196,11 +198,22 @@ class orphanReport():
         return tableData
 
     def makeReport(self, td):
-        reportdata = [\
-          'ORPHAN CALL\tUNIQUE STATION COUNT\tTOTAL QSOS\tWORKED BY']
-        
-        for uc in td:
-            reportdata.append('{}\t{}\t{}\t{}'.format(\
+        if self.opData:
+            reportdata = [\
+              'ORPHAN CALL\tOP NAME\tOP EMAIL\tUNIQUE STATION COUNT\tTOTAL QSOS\tWORKED BY']
+            for uc in td:
+                reportdata.append('{}\t{}\t{}\t{}\t{}\t{}'.format(\
+                                                  uc['ORPHANCALL'],
+                                                  uc['OPNAME'],
+                                                  uc['OPEMAIL'],
+                                                  uc['UNIQUESTATIONS'],
+                                                  uc['TOTALQSOS'],
+                                                  uc['WORKEDBY'])) 
+        else:    
+            reportdata = [\
+             'ORPHAN CALL\tUNIQUE STATION COUNT\tTOTAL QSOS\tWORKED BY'] 
+            for uc in td:
+                reportdata.append('{}\t{}\t{}\t{}'.format(\
                                                   uc['ORPHANCALL'],
                                                   uc['UNIQUESTATIONS'],
                                                   uc['TOTALQSOS'],
